@@ -1,4 +1,4 @@
- name: Baatly User APK
+name: Baatly APK Test
 
 on:
   workflow_dispatch:
@@ -9,4 +9,4 @@ jobs:
 
     steps:
       - name: Test GitHub Actions
-        run: echo "GitHub Actions workflow is valid"
+        run: echo "Baatly workflow is valid"
