@@ -1,4 +1,4 @@
-name: Baatly User APK
+ name: Baatly User APK
 
 on:
   workflow_dispatch:
