@@ -1,0 +1,85 @@
+name: Baatly User APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find ZIP
+        id: zip
+        run: |
+          ZIP=$(find . -maxdepth 2 -type f -name "*.zip" | head -n 1)
+
+          if [ -z "$ZIP" ]; then
+            echo "No ZIP file found"
+            exit 1
+          fi
+
+          echo "ZIP=$ZIP"
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: Extract ZIP
+        run: |
+          rm -rf project
+          mkdir project
+          unzip -q "${{ steps.zip.outputs.zip }}" -d project
+
+      - name: Find Android Project
+        id: android
+        run: |
+          GRADLEW=$(find project -type f -name "gradlew" | head -n 1)
+
+          if [ -z "$GRADLEW" ]; then
+            echo "gradlew not found"
+            exit 1
+          fi
+
+          DIR=$(dirname "$GRADLEW")
+
+          echo "Android project: $DIR"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Make Gradle executable
+        run: |
+          chmod +x "${{ steps.android.outputs.dir }}/gradlew"
+
+      - name: Build Debug APK
+        run: |
+          cd "${{ steps.android.outputs.dir }}"
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Find APK
+        id: apk
+        run: |
+          APK=$(find "${{ steps.android.outputs.dir }}" \
+            -type f \
+            -name "*.apk" \
+            -path "*/build/outputs/apk/debug/*" \
+            | head -n 1)
+
+          if [ -z "$APK" ]; then
+            echo "APK not found"
+            exit 1
+          fi
+
+          echo "APK=$APK"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: baatly-user-debug-apk
+          path: ${{ steps.apk.outputs.apk }}
+          if-no-files-found: error
